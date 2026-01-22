@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: grade-inquiry-system
+  
+  # 정적 리소스 설정 (프론트엔드)
+  web:
+    resources:
+      static-locations: file:../frontend/src/
+      cache:
+        period: 3600 # 1시간 캐시
+  
+  # 데이터베이스 설정 (Master)
+  datasource:
+    url: jdbc:mysql://localhost:3306/grade_portal?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: grade_user
+    password: grade_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: none # 스키마는 수동 관리
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+  
+  # 세션 설정 (JDBC 기반)
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: never # 세션 테이블은 수동 생성 (이미 생성됨)
+    timeout: 30m
+  
+  # 캐시 설정 (Caffeine)
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=10000,expireAfterWrite=5m
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    session:
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        secure: false
+        max-age: 1800 # 30분
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.university.grade: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG

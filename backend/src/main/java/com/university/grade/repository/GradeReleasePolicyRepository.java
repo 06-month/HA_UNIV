@@ -1,0 +1,12 @@
+package com.university.grade.repository;
+
+import com.university.grade.entity.GradeReleasePolicy;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface GradeReleasePolicyRepository extends JpaRepository<GradeReleasePolicy, Long> {
+    Optional<GradeReleasePolicy> findBySemester(String semester);
+}
