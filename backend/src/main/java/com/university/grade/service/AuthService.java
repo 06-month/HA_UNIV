@@ -8,6 +8,7 @@ import com.university.grade.repository.StudentRepository;
 import com.university.grade.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +25,30 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        // loginId로 사용자 찾기 (학번 또는 사번)
-        Optional<User> userOpt = userRepository.findByLoginId(request.getUserId());
+        Optional<User> userOpt;
         
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException("학번/사번 또는 비밀번호가 올바르지 않습니다.");
+        try {
+            // loginId로 사용자 찾기 (학번 또는 사번)
+            log.debug("Attempting to find user with loginId: {}", request.getUserId());
+            userOpt = userRepository.findByLoginId(request.getUserId());
+            
+            if (userOpt.isEmpty()) {
+                log.warn("User not found - loginId: {}", request.getUserId());
+                throw new RuntimeException("학번/사번 또는 비밀번호가 올바르지 않습니다.");
+            }
+        } catch (DataAccessException e) {
+            // 데이터베이스 연결 오류를 명확히 구분
+            log.error("Database access error during login - loginId: {}, error: {}, cause: {}", 
+                    request.getUserId(), e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "N/A", e);
+            throw new RuntimeException("데이터베이스 연결에 실패했습니다. 서버 관리자에게 문의하세요.", e);
+        } catch (RuntimeException e) {
+            // 이미 처리된 RuntimeException은 그대로 전달
+            throw e;
+        } catch (Exception e) {
+            // 기타 예외도 로깅
+            log.error("Unexpected error during user lookup - loginId: {}, error: {}", 
+                    request.getUserId(), e.getMessage(), e);
+            throw new RuntimeException("로그인 처리 중 오류가 발생했습니다.", e);
         }
 
         User user = userOpt.get();
