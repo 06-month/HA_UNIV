@@ -25,32 +25,57 @@ async function doLogout() {
 
 // ===== API 호출 함수들 =====
 async function fetchAvailableSemesters(studentId) {
+  console.log("fetchAvailableSemesters called with studentId:", studentId, "type:", typeof studentId);
+  
   try {
     const response = await fetch(`/api/v1/grades/semesters`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-Student-Id': studentId,
+        'X-Student-Id': String(studentId), // 명시적으로 문자열로 변환
         'X-User-Role': localStorage.getItem('userRole') || 'ROLE_STUDENT'
       },
-      credentials: 'include'
+      credentials: 'include' // 쿠키 포함 (세션 유지)
     });
+
+    console.log("Response status:", response.status, "ok:", response.ok);
 
     if (!response.ok) {
       if (response.status === 401) {
+        console.error("401 Unauthorized - 세션이 만료되었거나 인증이 필요합니다.");
         localStorage.removeItem("isLoggedIn");
         localStorage.removeItem("userId");
         localStorage.removeItem("userRole");
         window.location.href = "../login/index.html";
         return [];
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 500) {
+        const errorText = await response.text();
+        console.error("서버 오류 (500):", errorText);
+        throw new Error("서버 오류: 학기 목록을 가져올 수 없습니다.");
+      }
+      const errorText = await response.text();
+      console.error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log("학기 목록 응답 데이터:", data, "type:", typeof data, "isArray:", Array.isArray(data));
+    
+    if (!Array.isArray(data)) {
+      console.error("응답이 배열이 아닙니다:", data);
+      return [];
+    }
+    
+    return data;
   } catch (error) {
     console.error('Available semesters fetch failed:', error);
-    return [];
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      studentId: studentId
+    });
+    throw error; // 에러를 다시 throw하여 상위에서 처리할 수 있도록
   }
 }
 
@@ -135,6 +160,15 @@ function getTermText(termValue) {
   if (termValue === "2") return "2학기";
   if (termValue === "S") return "여름학기";
   return "겨울학기";
+}
+
+function formatSemester(semester) {
+  if (!semester) return "학기를 선택하세요";
+  const parts = semester.split("-");
+  if (parts.length !== 2) return semester;
+  const year = parts[0];
+  const term = getTermText(parts[1]);
+  return `${year}년 ${term}`;
 }
 
 function formatToday() {
@@ -429,9 +463,15 @@ function bindEvents() {
     doLogout();
   });
 
-  // 상단 사용자 표시: 학번/사번
-  const userId = localStorage.getItem("userId");
-  if (userId) $("userName").textContent = userId;
+  // 상단 사용자 표시: 이름
+  const userName = localStorage.getItem("userName");
+  if (userName) {
+    $("userName").textContent = userName;
+  } else {
+    // 이름이 없으면 userId 표시 (하위 호환성)
+    const userId = localStorage.getItem("userId");
+    if (userId) $("userName").textContent = userId;
+  }
 
   $("resetBtn").addEventListener("click", resetFilters);
   $("searchBtn").addEventListener("click", applyFilters);
@@ -526,24 +566,55 @@ function bindEvents() {
 }
 
 async function loadAvailableSemesters() {
-  const studentId = localStorage.getItem("userId") || "12345";
-  const semesters = await fetchAvailableSemesters(studentId);
+  const studentId = localStorage.getItem("userId");
+  console.log("loadAvailableSemesters - userId from localStorage:", studentId);
   
-  const select = $("semester");
-  select.innerHTML = '<option value="">학기를 선택하세요...</option>';
+  if (!studentId) {
+    console.error("userId가 없습니다. 로그인을 다시 해주세요.");
+    alert("로그인 정보가 없습니다. 다시 로그인해주세요.");
+    window.location.href = "../login/index.html";
+    return;
+  }
   
-  semesters.forEach(semester => {
-    const option = document.createElement("option");
-    option.value = semester;
-    option.textContent = formatSemester(semester);
-    select.appendChild(option);
-  });
-  
-  // 첫 번째 학기를 기본 선택
-  if (semesters.length > 0) {
-    select.value = semesters[0];
-    renderSummary();
-    applyFilters();
+  try {
+    console.log("Fetching semesters for studentId:", studentId);
+    const semesters = await fetchAvailableSemesters(studentId);
+    console.log("Received semesters:", semesters);
+    
+    const select = $("semester");
+    select.innerHTML = '<option value="">학기를 선택하세요...</option>';
+    
+    if (!semesters || semesters.length === 0) {
+      console.warn("사용 가능한 학기가 없습니다. studentId:", studentId);
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "사용 가능한 학기가 없습니다";
+      option.disabled = true;
+      select.appendChild(option);
+      alert("사용 가능한 학기가 없습니다. 데이터베이스를 확인해주세요.");
+      return;
+    }
+    
+    semesters.forEach(semester => {
+      const option = document.createElement("option");
+      option.value = semester;
+      option.textContent = formatSemester(semester);
+      select.appendChild(option);
+    });
+    
+    console.log("Loaded semesters into select:", semesters);
+    
+    // 첫 번째 학기를 기본 선택
+    if (semesters.length > 0) {
+      select.value = semesters[0];
+      renderSummary();
+      applyFilters();
+    }
+  } catch (error) {
+    console.error("학기 목록 로드 실패:", error);
+    const select = $("semester");
+    select.innerHTML = '<option value="">학기 목록을 불러올 수 없습니다</option>';
+    alert(`학기 목록을 불러오는데 실패했습니다: ${error.message}`);
   }
 }
 

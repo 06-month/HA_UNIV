@@ -65,12 +65,36 @@ function init() {
         return res.json();
       })
       .then(data => {
+        console.log("Login response:", data);
+        
+        // studentId가 없으면 경고
+        if (!data.studentId) {
+          console.warn("studentId is null in login response. userId:", data.userId);
+          setMsg("경고: 학생 정보를 찾을 수 없습니다. 성적 조회가 제한될 수 있습니다.", "error");
+          // 일단 로그인은 진행하되, userId를 사용
+        }
+        
         localStorage.setItem("isLoggedIn", "true");
         // backend returns studentId as the primary key for grades
-        localStorage.setItem("userId", data.studentId || data.userId);
+        // studentId가 있으면 studentId를, 없으면 userId를 사용 (교직원의 경우)
+        const storedUserId = data.studentId ? String(data.studentId) : String(data.userId);
+        localStorage.setItem("userId", storedUserId);
         localStorage.setItem("userRole", data.role);
+        // 사용자 이름 저장
+        localStorage.setItem("userName", data.name || "사용자");
+        
+        console.log("Stored in localStorage:", {
+          isLoggedIn: localStorage.getItem("isLoggedIn"),
+          userId: localStorage.getItem("userId"),
+          userRole: localStorage.getItem("userRole"),
+          userName: localStorage.getItem("userName"),
+          originalData: data
+        });
+        
         setMsg("로그인 성공! 메인 화면으로 이동합니다...", "success");
-        window.location.href = "../main/index.html";
+        setTimeout(() => {
+          window.location.href = "../main/index.html";
+        }, 500);
       })
       .catch(err => {
         console.error(err);

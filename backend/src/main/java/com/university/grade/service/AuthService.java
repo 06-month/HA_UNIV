@@ -46,12 +46,14 @@ public class AuthService {
         // 학생 정보 조회
         Optional<Student> studentOpt = studentRepository.findByUserUserId(user.getUserId());
         Long studentId = studentOpt.map(Student::getStudentId).orElse(null);
+        String name = studentOpt.map(Student::getName).orElse("사용자"); // 학생 이름, 없으면 기본값
 
         return LoginResponse.builder()
                 .userId(user.getUserId())
                 .studentId(studentId)
                 .role(user.getRole())
                 .message("로그인 성공")
+                .name(name)
                 .build();
     }
 }

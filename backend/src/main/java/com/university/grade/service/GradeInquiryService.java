@@ -64,14 +64,51 @@ public class GradeInquiryService {
                 .collect(Collectors.toList());
     }
 
-    @Cacheable(value = "availableSemesters", key = "#studentId")
+    @Cacheable(value = "availableSemesters", key = "'semesters:' + #studentId", condition = "#studentId != null", unless = "#result == null || #result.isEmpty()")
     @Transactional(readOnly = true)
     public List<String> getAvailableSemesters(Long studentId) {
-        return enrollmentRepository.findByStudentId(studentId)
-                .stream()
-                .map(Enrollment::getSemester)
-                .distinct()
-                .sorted((a, b) -> b.compareTo(a)) // 최신 학기부터
-                .collect(Collectors.toList());
+        log.info("getAvailableSemesters called with studentId: {}", studentId);
+        try {
+            // 1. GradeSummary에서 학기 목록 가져오기 (가장 확실한 데이터)
+            List<GradeSummary> summaries = summaryRepository.findByStudentStudentId(studentId);
+            log.info("Found {} grade summaries for studentId {}", summaries.size(), studentId);
+            
+            List<String> semestersFromSummary = summaries.stream()
+                    .map(GradeSummary::getSemester)
+                    .filter(semester -> semester != null && !semester.trim().isEmpty())
+                    .distinct()
+                    .collect(Collectors.toList());
+            
+            // 2. Enrollment에서도 학기 목록 가져오기 (GradeSummary에 없는 경우 대비)
+            List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
+            log.debug("Found {} enrollments for studentId {}", enrollments.size(), studentId);
+            
+            List<String> semestersFromEnrollment = enrollments.stream()
+                    .map(Enrollment::getSemester)
+                    .filter(semester -> semester != null && !semester.trim().isEmpty())
+                    .distinct()
+                    .collect(Collectors.toList());
+            
+            // 3. 두 리스트를 합치고 중복 제거
+            java.util.Set<String> semesterSet = new java.util.HashSet<>();
+            semesterSet.addAll(semestersFromSummary);
+            semesterSet.addAll(semestersFromEnrollment);
+            
+            List<String> semesters = semesterSet.stream()
+                    .sorted((a, b) -> b.compareTo(a)) // 최신 학기부터
+                    .collect(Collectors.toList());
+            
+            log.info("Available semesters for studentId {}: {} (from {} summaries, {} enrollments)", 
+                    studentId, semesters, summaries.size(), enrollments.size());
+            
+            if (semesters.isEmpty()) {
+                log.warn("No semesters found for studentId {} from any source", studentId);
+            }
+            
+            return semesters;
+        } catch (Exception e) {
+            log.error("Error getting available semesters for studentId {}: {}", studentId, e.getMessage(), e);
+            return List.of();
+        }
     }
 }
