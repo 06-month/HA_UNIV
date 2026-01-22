@@ -53,13 +53,42 @@ public class AuthService {
 
         User user = userOpt.get();
         
+        // 사용자 정보 검증
+        if (user.getPasswordHash() == null || user.getPasswordHash().trim().isEmpty()) {
+            log.error("User password hash is null or empty - userId: {}, loginId: {}", 
+                    user.getUserId(), request.getUserId());
+            throw new RuntimeException("사용자 비밀번호 정보가 올바르지 않습니다. 관리자에게 문의하세요.");
+        }
+        
+        // 입력 비밀번호 검증
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            log.warn("Empty password provided - loginId: {}", request.getUserId());
+            throw new RuntimeException("비밀번호를 입력해주세요.");
+        }
+        
         // 비밀번호 검증
-        log.debug("Login attempt - userId: {}, storedHash: {}", request.getUserId(), user.getPasswordHash());
-        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
-        log.debug("Password match result: {}", passwordMatches);
+        String inputPassword = request.getPassword().trim();
+        String storedHash = user.getPasswordHash();
+        
+        log.info("Password verification attempt - userId: {}, loginId: {}, hashLength: {}, hashPrefix: {}", 
+                user.getUserId(), request.getUserId(), 
+                storedHash != null ? storedHash.length() : 0,
+                storedHash != null && storedHash.length() > 10 ? storedHash.substring(0, 10) : "N/A");
+        
+        boolean passwordMatches = false;
+        try {
+            passwordMatches = passwordEncoder.matches(inputPassword, storedHash);
+            log.info("Password match result: {} for loginId: {}", passwordMatches, request.getUserId());
+        } catch (Exception e) {
+            log.error("Error during password verification - loginId: {}, error: {}", 
+                    request.getUserId(), e.getMessage(), e);
+            throw new RuntimeException("비밀번호 검증 중 오류가 발생했습니다.", e);
+        }
         
         if (!passwordMatches) {
-            log.warn("Login failed - userId: {}, password mismatch", request.getUserId());
+            log.warn("Login failed - userId: {}, loginId: {}, password mismatch. Hash format: {}", 
+                    user.getUserId(), request.getUserId(),
+                    storedHash != null && storedHash.startsWith("$2") ? "BCrypt" : "Unknown");
             throw new RuntimeException("학번/사번 또는 비밀번호가 올바르지 않습니다.");
         }
 
