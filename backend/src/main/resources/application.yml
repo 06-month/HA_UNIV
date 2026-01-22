@@ -3,9 +3,11 @@ spring:
     name: grade-inquiry-system
   
   # 정적 리소스 설정 (프론트엔드)
+  # JAR 내부의 static 디렉토리 사용 (클라우드 배포 시)
+  # 개발 환경에서는 WebConfig에서 외부 경로도 지원
   web:
     resources:
-      static-locations: file:../frontend/src/
+      static-locations: classpath:/static/
       cache:
         period: 3600 # 1시간 캐시
   

@@ -58,3 +58,13 @@ tasks.named('test') {
 bootRun {
     sourceResources sourceSets.main
 }
+
+// 프론트엔드 파일을 resources/static에 복사하는 태스크
+task copyFrontend(type: Copy) {
+    from '../frontend/src'
+    into 'src/main/resources/static'
+    description = 'Copy frontend files to resources/static'
+}
+
+// 빌드 전에 프론트엔드 파일 복사
+processResources.dependsOn copyFrontend

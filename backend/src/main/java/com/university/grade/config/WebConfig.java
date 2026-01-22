@@ -13,13 +13,29 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 프론트엔드 정적 리소스 서빙
-        String frontendPath = Paths.get("..", "frontend", "src").toAbsolutePath().normalize().toString();
-        
+        // 1. JAR 내부의 static 디렉토리 (클라우드 배포 시)
         registry.addResourceHandler("/login/**")
-                .addResourceLocations("file:" + frontendPath + "/login/");
+                .addResourceLocations("classpath:/static/login/");
         
         registry.addResourceHandler("/main/**")
-                .addResourceLocations("file:" + frontendPath + "/main/");
+                .addResourceLocations("classpath:/static/main/");
+        
+        // 2. 개발 환경: 외부 경로도 지원 (로컬 개발 시)
+        try {
+            String frontendPath = Paths.get("..", "frontend", "src").toAbsolutePath().normalize().toString();
+            java.io.File frontendDir = new java.io.File(frontendPath);
+            if (frontendDir.exists()) {
+                registry.addResourceHandler("/login/**")
+                        .addResourceLocations("file:" + frontendPath + "/login/")
+                        .resourceChain(false);
+                
+                registry.addResourceHandler("/main/**")
+                        .addResourceLocations("file:" + frontendPath + "/main/")
+                        .resourceChain(false);
+            }
+        } catch (Exception e) {
+            // 외부 경로가 없으면 JAR 내부 리소스만 사용
+        }
     }
     
     @Override

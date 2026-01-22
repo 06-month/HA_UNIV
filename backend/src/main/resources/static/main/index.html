@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>학사포털 | 성적조회</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <!-- Top Bar -->
+  <header class="topbar" role="banner">
+    <div class="topbar-inner">
+      <div class="brand" aria-label="학사포털">
+        <div class="logo" aria-hidden="true">U</div>
+        <div class="brand-text">
+          <span class="brand-name">학사포털</span>
+          <span class="brand-sep">|</span>
+          <span class="brand-sub">Academic Portal</span>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="user">
+        <div class="pill" title="로그인 정보">
+          <span class="pill-icon" aria-hidden="true">👤</span>
+          <strong id="userName">홍길동</strong>
+        </div>
+        <a class="logout" href="#" id="logoutLink">로그아웃</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" role="navigation" aria-label="좌측 메뉴">
+      <div class="side-section-title">학사정보</div>
+      <a class="side-item active" href="#" aria-current="page">
+        <span class="side-icon" aria-hidden="true">성</span>
+        <span class="side-label">성적조회</span>
+      </a>
+    </aside>
+
+    <main class="content" role="main">
+      <div class="wrap">
+        <div class="breadcrumb">홈 &gt; 학사정보 &gt; 성적조회</div>
+
+        <div class="page-head">
+          <div><h1>성적조회</h1></div>
+          <div class="meta">
+            기준일: <span id="today"></span><br/>
+            성적구분: <strong>정규학기</strong>
+          </div>
+        </div>
+
+        <section class="card" aria-label="조회 조건">
+          <div class="card-h">
+            <h2>조회 조건</h2>
+            <button class="btn ghost" type="button" id="resetBtn">초기화</button>
+          </div>
+
+          <div class="card-b">
+            <div class="filters">
+              <div class="filter-row">
+                <div class="field field-wide">
+                  <div class="label">학기 선택</div>
+                  <select id="semester">
+                    <option value="">학기를 선택하세요...</option>
+                  </select>
+                </div>
+
+                <div class="field field-wide">
+                  <div class="label">과목명(검색)</div>
+                  <input id="q" type="text" placeholder="예: 데이터베이스, 운영체제" />
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn primary" type="button" id="searchBtn">🔍 조회</button>
+                <button class="btn" type="button" id="printBtn">🖨 출력</button>
+                <button class="btn" type="button" id="excelBtn">⬇ 엑셀</button>
+              </div>
+            </div>
+
+            <div class="notice">
+              <span class="notice-icon" aria-hidden="true">ℹ️</span>
+              <div class="notice-text">
+                <strong>안내:</strong> 과목명을 클릭하면 상세정보(평가/비고)를 확인할 수 있습니다.
+                성적 이의신청/정정은 학교 규정에 따릅니다.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-label="요약">
+          <div class="card-h">
+            <h2>학기 성적 요약</h2>
+            <div class="term-pill"><span id="termLabel">2025년 1학기</span></div>
+          </div>
+
+          <div class="card-b">
+            <div class="summary">
+              <div class="stat">
+                <div class="k">신청학점</div>
+                <div class="v"><span id="sumApplied">18</span><small>학점</small></div>
+              </div>
+              <div class="stat">
+                <div class="k">취득학점</div>
+                <div class="v"><span id="sumEarned">18</span><small>학점</small></div>
+              </div>
+              <div class="stat">
+                <div class="k">평점평균(GPA)</div>
+                <div class="v"><span id="sumGPA">3.82</span><small>/ 4.50</small></div>
+              </div>
+              <div class="stat">
+                <div class="k">백분율 환산</div>
+                <div class="v"><span id="sumPct">89.5</span><small>점</small></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-label="성적내역">
+          <div class="card-h">
+            <h2>성적내역</h2>
+            <div class="hint">정렬: 아래 버튼 또는 헤더 참고</div>
+          </div>
+
+          <div class="card-b table-card">
+            <div class="table-wrap" role="region" aria-label="성적 테이블" tabindex="0">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="w-code">과목코드</th>
+                    <th>과목명</th>
+                    <th class="w-type">이수구분</th>
+                    <th class="w-credit">학점</th>
+                    <th class="w-grade">성적(등급)</th>
+                    <th class="w-point">평점</th>
+                    <th class="w-pct">백분율</th>
+                    <th class="w-prof">담당교수</th>
+                    <th class="w-note">비고</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="table-actions">
+              <div>
+                총 <strong id="count">0</strong>건
+                <span class="muted">(과목명을 클릭하면 상세정보)</span>
+              </div>
+              <div class="right">
+                <button class="btn" type="button" id="sortCreditBtn">↕ 학점 정렬</button>
+                <button class="btn" type="button" id="sortPointBtn">↕ 평점 정렬</button>
+                <button class="btn" type="button" id="sortPctBtn">↕ 백분율 정렬</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Drawer -->
+  <div class="drawer-backdrop" id="backdrop" aria-hidden="true"></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="과목 상세">
+    <div class="drawer-h">
+      <div>
+        <h3 id="dTitle">과목 상세</h3>
+        <div class="sub" id="dSub">과목코드 · 이수구분 · 담당교수</div>
+      </div>
+      <button class="btn" type="button" id="closeDrawerBtn" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="drawer-b">
+      <div class="kv">
+        <div class="row"><div class="k">학년도/학기</div><div class="val" id="dTerm"></div></div>
+        <div class="row"><div class="k">학점</div><div class="val" id="dCredit"></div></div>
+        <div class="row"><div class="k">등급</div><div class="val" id="dGrade"></div></div>
+        <div class="row"><div class="k">평점</div><div class="val" id="dPoint"></div></div>
+        <div class="row"><div class="k">백분율</div><div class="val" id="dPct"></div></div>
+      </div>
+
+      <div class="kv">
+        <div class="row"><div class="k">평가방식</div><div class="val" id="dEval"></div></div>
+        <div class="row"><div class="k">비고</div><div class="val" id="dNote"></div></div>
+      </div>
+
+      <div class="kv">
+        <div class="row"><div class="k">상세안내</div><div class="val" id="dDesc"></div></div>
+      </div>
+    </div>
+
+    <div class="drawer-f">
+      <button class="btn" type="button" id="appealBtn">이의신청</button>
+      <button class="btn primary" type="button" id="okBtn">확인</button>
+    </div>
+  </aside>
+
+  <!-- Appeal Modal (display:none 기본) -->
+  <div class="appeal-backdrop" id="appealBackdrop" aria-hidden="true"></div>
+  <aside class="appeal-modal" id="appealModal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="이의신청 작성">
+    <div class="appeal-h">
+      <div>
+        <h3>이의신청 작성</h3>
+        <div class="sub" id="appealSub">과목을 선택하면 여기에 표시됩니다.</div>
+      </div>
+      <button class="btn" type="button" id="closeAppealBtn" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="appeal-b">
+      <label class="appeal-label" for="appealText">이의신청 내용</label>
+      <textarea id="appealText" class="appeal-textarea" placeholder="이의신청 사유를 구체적으로 작성해주세요."></textarea>
+      <div class="appeal-help">
+        <span class="muted">* 데모 화면입니다. 실제 제출은 서버 연동이 필요합니다.</span>
+      </div>
+    </div>
+
+    <div class="appeal-f">
+      <button class="btn" type="button" id="cancelAppealBtn">취소</button>
+      <button class="btn primary" type="button" id="submitAppealBtn">제출</button>
+    </div>
+  </aside>
+
+  <script src="./app.js"></script>
+</body>
+</html>

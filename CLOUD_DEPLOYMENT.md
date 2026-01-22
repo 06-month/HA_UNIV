@@ -110,6 +110,115 @@ env_variables:
    SPRING_PROFILES_ACTIVE = prod
    ```
 
+### 네이버 클라우드 플랫폼 (NCP) - 프라이빗 VPC
+
+#### VPC 내부 MySQL 서버 연동
+
+네이버 클라우드의 프라이빗 VPC 환경에서는 VPC 내부 IP 주소를 사용하여 MySQL 서버에 연결합니다.
+
+##### 1. 환경 변수 설정
+
+**Server (서버) 환경에서:**
+```bash
+# VPC 내부 IP 주소 사용 (예: 10.0.1.10)
+DB_URL=jdbc:mysql://10.0.1.10:3306/univ_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+
+# 데이터베이스 사용자명
+DB_USERNAME=your_db_username
+
+# 데이터베이스 비밀번호
+DB_PASSWORD=your_db_password
+
+# 프로덕션 프로파일 활성화
+SPRING_PROFILES_ACTIVE=prod
+```
+
+**또는 간단한 형식:**
+```bash
+DB_URL=jdbc:mysql://[VPC내부IP]:3306/univ_db
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+SPRING_PROFILES_ACTIVE=prod
+```
+
+##### 2. 네이버 클라우드 콘솔에서 설정
+
+**Server (서버) → 서버 관리 → 환경 변수 설정:**
+
+1. 네이버 클라우드 콘솔 접속
+2. Server (서버) → 해당 서버 선택
+3. 환경 변수 또는 시작 스크립트에 추가:
+   ```bash
+   export DB_URL=jdbc:mysql://10.0.1.10:3306/univ_db
+   export DB_USERNAME=your_username
+   export DB_PASSWORD=your_password
+   export SPRING_PROFILES_ACTIVE=prod
+   ```
+
+##### 3. 보안 그룹 설정 (중요!)
+
+**네이버 클라우드 콘솔에서:**
+
+1. **Server (서버) → 보안 그룹**
+2. MySQL 서버의 보안 그룹에 인바운드 규칙 추가:
+   - **프로토콜**: TCP
+   - **포트**: 3306
+   - **소스**: 애플리케이션 서버의 보안 그룹 또는 VPC 내부 IP 대역
+   - **설명**: "애플리케이션 서버에서 MySQL 접근 허용"
+
+3. **ACG (Access Control Group) 설정:**
+   - MySQL 서버 ACG에 애플리케이션 서버 IP 또는 보안 그룹 추가
+
+##### 4. VPC 내부 IP 확인 방법
+
+**MySQL 서버의 VPC 내부 IP 확인:**
+```bash
+# MySQL 서버에 SSH 접속 후
+ip addr show | grep "inet " | grep -v 127.0.0.1
+
+# 또는 네이버 클라우드 콘솔에서
+# Server (서버) → 서버 상세 정보 → 네트워크 인터페이스
+```
+
+##### 5. 연결 테스트
+
+애플리케이션 서버에서 MySQL 연결 테스트:
+```bash
+# MySQL 클라이언트로 연결 테스트
+mysql -h 10.0.1.10 -u your_username -p univ_db
+
+# 또는 telnet으로 포트 확인
+telnet 10.0.1.10 3306
+```
+
+##### 6. 애플리케이션 실행
+
+```bash
+# 환경 변수 설정 후 실행
+export DB_URL=jdbc:mysql://10.0.1.10:3306/univ_db
+export DB_USERNAME=your_username
+export DB_PASSWORD=your_password
+export SPRING_PROFILES_ACTIVE=prod
+
+java -jar grade-inquiry-backend-1.0.0.jar
+```
+
+##### 7. 네이버 클라우드 특화 설정
+
+**프라이빗 VPC 환경 특성:**
+- VPC 내부 IP 사용 (공개 IP 불필요)
+- 보안 그룹/ACG로 접근 제어
+- SSL 연결은 선택사항 (VPC 내부이므로)
+- `useSSL=false` 권장 (성능 향상)
+
+**예시 설정:**
+```bash
+# 프라이빗 VPC 환경 (SSL 불필요)
+DB_URL=jdbc:mysql://10.0.1.10:3306/univ_db?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
+DB_USE_SSL=false
+DB_ALLOW_PUBLIC_KEY=true
+```
+
 ### Docker 배포
 
 #### Dockerfile 예시
@@ -184,6 +293,9 @@ DB_URL=jdbc:mysql:///grade_portal?cloudSqlInstance=project:region:instance&socke
 
 # Azure Database for MySQL
 DB_URL=jdbc:mysql://your-server.mysql.database.azure.com:3306/grade_portal?useSSL=true&requireSSL=true
+
+# 네이버 클라우드 프라이빗 VPC
+DB_URL=jdbc:mysql://10.0.1.10:3306/univ_db?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
 ```
 
 ## 보안 권장사항

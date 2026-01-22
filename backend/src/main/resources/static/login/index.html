@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>성적조회 시스템 - 로그인</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="top-title">성적조회 시스템</div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="panel left">
+      <div class="brand-block">
+        <p class="slogan">미래가치를 창출하는 글로벌 산학일체 혁신대학</p>
+
+        <div class="brand">
+          <div class="brand-main">
+            <span class="hanbat">HANBAT</span>
+            <span class="portal">PORTAL</span>
+          </div>
+          <div class="brand-sub">HANBAT NATIONAL UNIVERSITY PORTAL</div>
+        </div>
+
+        <div class="login-card" aria-label="로그인">
+          <div class="login-head">
+            <div class="login-title">LOGIN</div>
+            <div class="login-desc">학번 / 사번으로 로그인을 하시면 이용하실 수 있습니다.</div>
+          </div>
+
+          <form id="loginForm" class="login-form" autocomplete="off">
+            <div class="fields">
+              <div class="field">
+                <label for="userId">학번/사번</label>
+                <input id="userId" type="text" placeholder="" />
+              </div>
+              <div class="field">
+                <label for="password">비밀번호</label>
+                <input id="password" type="password" placeholder="" />
+              </div>
+            </div>
+
+            <button id="loginBtn" class="login-btn" type="submit">LOGIN</button>
+          </form>
+
+          <div id="msg" class="msg" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section class="panel right">
+      <div class="help">
+        <h2>로그인 도움말</h2>
+        <ul>
+          <li>아이디: 학번 또는 교직원 번호</li>
+          <li>[아이디찾기/비밀번호변경]은 본인 명의의 휴대폰으로만 인증이 가능합니다.</li>
+          <li>교직원은 [인증서 로그인] 및 [2차인증 로그인]으로 이용이 가능합니다.</li>
+          <li>[공동인증서 로그인]이 안 될 경우 모듈을 다운로드하여 설치하여 주시기 바랍니다.</li>
+          <li>[비밀번호 찾기]는 본인인증(OTP인증, 휴대폰인증) 절차 후 비밀번호를 재설정할 수 있습니다.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="footnote">
+      * 본 사이트는 Naver Cloud 실습을 위해 제작된 페이지입니다.
+    </footer>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
