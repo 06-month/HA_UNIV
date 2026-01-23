@@ -16,5 +16,10 @@ WORKDIR /app
 # 빌드 결과물 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
+# 환경 변수 기본값 설정 (런타임에 오버라이드 가능)
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV DB_URL=jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+ENV DB_USERNAME=taekjunnn
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
