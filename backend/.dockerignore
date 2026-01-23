@@ -1,0 +1,31 @@
+# 빌드 결과물 (이미지 내에서 다시 빌드하므로 불필요)
+build/
+.gradle/
+
+# IDE 설정 파일
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# 로그 파일
+*.log
+logs/
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# Git (선택사항 - 필요시 제외)
+.git/
+.gitignore
+
+# 테스트 결과
+.gradle-test-kit/
+
+# 임시 파일
+*.tmp
+*.bak
+*.swp
+*~
