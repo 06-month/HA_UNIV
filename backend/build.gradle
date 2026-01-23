@@ -39,6 +39,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
     
+    // Prometheus 메트릭 (HPA용)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    
     // Spring Boot DevTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     
