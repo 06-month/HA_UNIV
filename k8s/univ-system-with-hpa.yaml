@@ -1,0 +1,246 @@
+# 기존 배포 파일에 HPA 기능 추가
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: univ-frontend
+spec:
+  replicas: 2  # HPA가 관리하므로 초기값 (프론트엔드도 2개로 시작)
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      imagePullSecrets:
+      - name: reg-cred
+      containers:
+      - name: frontend
+        image: reg-univ.kr.ncr.ntruss.com/my-frontend:v1
+        ports:
+        - containerPort: 80
+        # 🔥 HPA를 위한 리소스 요청/제한 (현실적인 값으로 조정)
+        resources:
+          requests:
+            cpu: 200m      # 0.2 CPU 코어 (Nginx + 정적파일)
+            memory: 128Mi  # 128MB RAM
+          limits:
+            cpu: 500m      # 0.5 CPU 코어 최대
+            memory: 256Mi  # 256MB RAM 최대
+        # 헬스체크 추가
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: univ-backend
+spec:
+  replicas: 2  # HPA가 관리하므로 초기값
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+      - name: reg-cred
+      containers:
+      - name: backend
+        image: reg-univ.kr.ncr.ntruss.com/my-backend:v5
+        ports:
+        - containerPort: 8080
+        # 🔥 HPA를 위한 리소스 요청/제한 (Spring Boot 애플리케이션에 적합한 값)
+        resources:
+          requests:
+            cpu: 500m      # 0.5 CPU 코어 (Spring Boot 기본 요구사항)
+            memory: 512Mi  # 512MB RAM (JVM 힙 + 메타스페이스)
+          limits:
+            cpu: 1000m     # 1 CPU 코어 최대
+            memory: 1Gi    # 1GB RAM 최대
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "taekjunnn"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "Melontype123!"
+        # 헬스체크 추가 (Actuator 엔드포인트 사용)
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: NodePort
+  # 세션 어피니티 추가 (같은 클라이언트는 같은 Pod로)
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 1800  # 30분
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: univ-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # 백엔드 헬스체크 경로 추가
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-svc
+            port:
+              number: 80
+      # Actuator 메트릭 엔드포인트 추가 (모니터링용)
+      - path: /actuator
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-svc
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80
+---
+# 🚀 백엔드 HPA 설정
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: univ-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: univ-backend
+  minReplicas: 2
+  maxReplicas: 15  # 더 많은 스케일링 허용
+  metrics:
+  # CPU 사용률 기반 스케일링
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # CPU 70% 초과 시 스케일 아웃
+  # 메모리 사용률 기반 스케일링
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80  # 메모리 80% 초과 시 스케일 아웃
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60  # 1분 안정화 기간
+      policies:
+      - type: Percent
+        value: 100  # 한 번에 최대 100% (2배) 증가
+        periodSeconds: 60
+      - type: Pods
+        value: 2    # 한 번에 최대 2개 Pod 추가
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300  # 5분 안정화 기간 (천천히 축소)
+      policies:
+      - type: Percent
+        value: 50   # 한 번에 최대 50% 감소
+        periodSeconds: 60
+      - type: Pods
+        value: 1    # 한 번에 최대 1개 Pod 제거
+        periodSeconds: 60
+---
+# 🚀 프론트엔드 HPA 설정
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: univ-frontend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: univ-frontend
+  minReplicas: 2  # 프론트엔드도 최소 2개로 증가
+  maxReplicas: 8  # 더 많은 스케일링 허용
+  metrics:
+  # CPU 사용률 기반 스케일링 (프론트엔드는 더 보수적)
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80  # CPU 80% 초과 시 스케일 아웃
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120  # 2분 안정화 기간
+      policies:
+      - type: Percent
+        value: 50   # 한 번에 최대 50% 증가
+        periodSeconds: 60
+      - type: Pods
+        value: 1    # 한 번에 최대 1개 Pod 추가
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300  # 5분 안정화 기간
+      policies:
+      - type: Pods
+        value: 1    # 한 번에 최대 1개 Pod 제거
+        periodSeconds: 120

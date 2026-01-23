@@ -55,15 +55,21 @@ server:
         secure: false
         max-age: 1800 # 30분
 
-# Actuator 설정
+# Actuator 설정 (HPA용 메트릭 포함)
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
 logging:
   level:
