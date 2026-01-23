@@ -84,12 +84,16 @@ spec:
             cpu: 1000m     # 1 CPU 코어 최대
             memory: 1Gi    # 1GB RAM 최대
         env:
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
-        - name: SPRING_DATASOURCE_USERNAME
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: DB_URL
+          value: "jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8"
+        - name: DB_USERNAME
           value: "taekjunnn"
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           value: "Melontype123!"
+        - name: COOKIE_SECURE
+          value: "false"
         # 헬스체크 추가 (Actuator 엔드포인트 사용)
         livenessProbe:
           httpGet:
