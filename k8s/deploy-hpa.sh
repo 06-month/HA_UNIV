@@ -38,9 +38,15 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
     echo ""
     echo "⏳ 롤링 업데이트 진행 상황 모니터링..."
     
-    # 백엔드 롤아웃 대기
+    # 백엔드 롤아웃 대기 (타임아웃 단축)
     echo "🖥️ 백엔드 롤아웃 대기 중..."
-    kubectl rollout status deployment/univ-backend --timeout=300s
+    kubectl rollout status deployment/univ-backend --timeout=120s
+    
+    if [ $? -ne 0 ]; then
+        echo "⚠️ 백엔드 롤아웃이 지연되고 있습니다. 강제로 진행합니다..."
+        kubectl delete pods -l app=backend --force --grace-period=0
+        sleep 30
+    fi
     
     # 프론트엔드 롤아웃 대기  
     echo "🌐 프론트엔드 롤아웃 대기 중..."
