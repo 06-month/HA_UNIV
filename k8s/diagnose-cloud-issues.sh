@@ -109,25 +109,40 @@ echo "-------------------"
 mysql -h 192.168.30.6 -P 3306 -u taekjunnn -p univ_db << 'SQL'
 SELECT 
     '학기별 요약' as type,
-    semester,
+    gs.semester,
     COUNT(*) as count,
-    GROUP_CONCAT(DISTINCT semester) as semesters
-FROM grade_summary
-WHERE student_id = 1
-GROUP BY semester
+    GROUP_CONCAT(DISTINCT gs.semester ORDER BY gs.semester DESC) as semesters
+FROM grade_summary gs
+WHERE gs.student_id = 1
+GROUP BY gs.student_id, gs.semester
 
 UNION ALL
 
 SELECT 
     '수강 과목',
-    semester,
+    e.semester,
     COUNT(*) as count,
     GROUP_CONCAT(DISTINCT c.course_name SEPARATOR ', ') as courses
 FROM enrollments e
 JOIN courses c ON e.course_id = c.course_id
 WHERE e.student_id = 1
-GROUP BY semester;
+GROUP BY e.student_id, e.semester;
 SQL
+
+echo ""
+
+# 7. 실제 문제 진단: 세션 및 캐시 관련
+echo "7️⃣ 실제 문제 진단"
+echo "-------------------"
+echo "⚠️  데이터는 모두 존재합니다. 문제는 애플리케이션 레벨일 가능성이 높습니다."
+echo ""
+echo "확인해야 할 사항:"
+echo "1. 실제 로그인한 사용자의 student_id 확인"
+echo "2. 애플리케이션 로그에서 세션에 저장된 studentId 확인"
+echo "3. 캐시 초기화 필요할 수 있음"
+echo ""
+echo "애플리케이션 로그 확인 명령어:"
+echo "kubectl logs -f deployment/univ-backend | grep -E 'studentId|semester|getAvailableSemesters|Login'"
 
 echo ""
 echo "✅ 진단 완료!"
