@@ -11,7 +11,7 @@ spring:
   
   # 데이터베이스 설정 (프로덕션 환경 - 환경 변수 사용)
   datasource:
-    url: ${DB_URL:jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8}
+    url: "${DB_URL:jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8}"
     username: ${DB_USERNAME:taekjunnn}
     password: ${DB_PASSWORD:Melontype123!}
     driver-class-name: com.mysql.cj.jdbc.Driver
