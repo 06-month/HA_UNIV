@@ -95,7 +95,11 @@ public class AuthService {
         // 학생 정보 조회
         Optional<Student> studentOpt = studentRepository.findByUserUserId(user.getUserId());
         Long studentId = studentOpt.map(Student::getStudentId).orElse(null);
-        String name = studentOpt.map(Student::getName).orElse("사용자"); // 학생 이름, 없으면 기본값
+        String name = studentOpt.map(Student::getName)
+                .filter(n -> n != null && !n.trim().isEmpty())
+                .orElse("사용자"); // 학생 이름, 없으면 기본값
+        
+        log.info("Login - userId: {}, studentId: {}, name: {}", user.getUserId(), studentId, name);
 
         return LoginResponse.builder()
                 .userId(user.getUserId())

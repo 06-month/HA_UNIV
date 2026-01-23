@@ -66,6 +66,7 @@ function init() {
       })
       .then(data => {
         console.log("Login response:", data);
+        console.log("Login response name field:", data.name, "type:", typeof data.name);
         
         // studentId가 없으면 경고
         if (!data.studentId) {
@@ -79,9 +80,17 @@ function init() {
         // studentId가 있으면 studentId를, 없으면 userId를 사용 (교직원의 경우)
         const storedUserId = data.studentId ? String(data.studentId) : String(data.userId);
         localStorage.setItem("userId", storedUserId);
-        localStorage.setItem("userRole", data.role);
-        // 사용자 이름 저장
-        localStorage.setItem("userName", data.name || "사용자");
+        localStorage.setItem("userRole", data.role || "");
+        
+        // 사용자 이름 저장 (명시적으로 확인)
+        const userName = data.name && data.name.trim() ? data.name.trim() : null;
+        if (userName) {
+          localStorage.setItem("userName", userName);
+          console.log("userName stored:", userName);
+        } else {
+          console.warn("userName is missing or empty in login response. data.name:", data.name);
+          localStorage.removeItem("userName"); // 기존 값 제거
+        }
         
         console.log("Stored in localStorage:", {
           isLoggedIn: localStorage.getItem("isLoggedIn"),
