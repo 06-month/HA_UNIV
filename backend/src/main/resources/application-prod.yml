@@ -1,34 +1,14 @@
 spring:
-  application:
-    name: grade-inquiry-system
-  
-  # 정적 리소스 설정 (프로덕션 - JAR 내부 리소스 사용)
-  web:
-    resources:
-      static-locations: classpath:/static/
-      cache:
-        period: 3600 # 1시간 캐시
-  
   # 데이터베이스 설정 (프로덕션 환경 - 환경 변수 사용)
   datasource:
-    url: "${DB_URL:jdbc:mysql://192.168.30.6:3306/univ_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8}"
+    url: ${DB_URL:jdbc:mysql://192.168.30.6:3306/univ_db}?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: ${DB_USERNAME:taekjunnn}
-    password: ${DB_PASSWORD:Melontype123!}
+    password: ${DB_PASSWORD:Melonty}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: ${DB_MAX_POOL_SIZE:20}
       minimum-idle: ${DB_MIN_IDLE:10}
       connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
-  
-  # JPA 설정 (프로덕션)
-  jpa:
-    hibernate:
-      ddl-auto: validate # 프로덕션에서는 validate 또는 none 사용
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: false
   
   # 세션 설정 (JDBC 기반)
   session:
@@ -36,12 +16,6 @@ spring:
     jdbc:
       initialize-schema: never
     timeout: 30m
-  
-  # 캐시 설정 (Caffeine)
-  cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=10000,expireAfterWrite=5m
 
 server:
   port: ${SERVER_PORT:8080}
@@ -51,18 +25,8 @@ server:
       cookie:
         name: JSESSIONID
         http-only: true
-        secure: ${COOKIE_SECURE:true}  # HTTPS 환경에서는 true
+        secure: ${COOKIE_SECURE:false}  # HTTP 환경에서는 false, HTTPS일 때만 true로 설정
         max-age: 1800
-
-# Actuator 설정
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: when-authorized
 
 logging:
   level:
